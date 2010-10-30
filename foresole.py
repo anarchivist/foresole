@@ -7,50 +7,67 @@ foresole.py
 
 import sys
 import os
+import uuid
+from datetime import datetime
 
 import sunburnt
-from fiwalk import fileobjects_using_sax
+from fiwalk import fiwalk_using_sax
 
-solr = sunburnt.SolrInterface("http://localhost:8983", "schema.xml")
+SOLR = sunburnt.SolrInterface("http://localhost:8983/solr", "solr/conf/schema.xml")
+
+def epoch_to_dt(epoch):
+    """Convert Unix epoch times into datetime.datetime objects."""
+    if type(epoch) in (str, unicode):
+        epoch = float(epoch)
+    return datetime.fromtimestamp(epoch)
 
 def fileobject_to_dict(fo):
-    return {
-        'atime': fo.atime(),
-        'compressed': fobj.compressed(),
-        'crtime': fo.crtime(),
-        'ctime': fo.ctime(),
-        'dtime': fo.dtime(),
-        'encrypted': fo.encrypted(),
-        'extension': fo.ext(),
-        'filename': fo.filename(),
-        'filesize': fo.filesize(),
-        'fragments': fo.fragments(),
-        'gid': fo._tags['gid'],
-        'fileid': fo._tags['id'],
-        'imagefile': fo._tags['imagefile'],
-        'inode': fo.inode(),
-        'libmagic': fo.libmagic(),
-        'md5': fo.md5(),
-        'meta_type': fo._tags['meta_type'],
-        'mode': fo._tags['mode'],
-        'mtime': fo.mtime(),
-        'nlink': fo._tags['nlink'],
-        'name_type': fo.name_type(),
-        'partition': fo.partition(),
-        'sha1': fo.sha1(),
-        'uid': fo._tags['uid'],
-    }
+    """Convert a fiwalk fileobject into a dict. Ignores unallocated fileobjects."""
+    if fo.allocated():
+        return {
+            'atime': epoch_to_dt(fo.atime()),
+            'compressed': fo.compressed(),
+            'crtime': epoch_to_dt(fo.crtime()),
+            'ctime': epoch_to_dt(fo.ctime()),
+            'dtime': epoch_to_dt(fo.dtime()),
+            'encrypted': fo.encrypted(),
+            'extension': fo.ext(),
+            'fileid': int(fo._tags['id']),
+            'filename': fo.filename(),
+            'filesize': long(fo.filesize()),
+            'fragments': int(fo.fragments()),
+            'gid': int(fo._tags['gid']),
+            'id': uuid.uuid4(),
+            #'imagefile': fo._tags['imagefile'],
+            'inode': int(fo.inode()),
+            'libmagic': fo.libmagic(),
+            'md5': fo.md5(),
+            'meta_type': fo._tags['meta_type'],
+            'mode': int(fo._tags['mode']),
+            'mtime': epoch_to_dt(fo.mtime()),
+            'nlink': fo._tags['nlink'],
+            'name_type': fo.name_type(),
+            'partition': int(fo.partition()),
+            'sha1': fo.sha1(),
+            'uid': int(fo._tags['uid']),
+        }
+    else:
+        return None
+
+
+def index_fobj(fobj):
+    """Post a fileobject-dict to Solr."""
+    doc = fileobject_to_dict(fobj)
+    if doc is not None:
+        #print doc
+        SOLR.add(doc)
+    else:
+        pass
     
 def main():
 	xml = sys.argv[1]
-	for fobj in fileobjects_using_sax(file(xml)):
-	    if not fobj.allocated():
-	        pass
-	    else:
-	        fod = fileobject_to_dict(fo)
-	        solr.add(fod)
-	solr.commit()
-
+	fobjs = fiwalk_using_sax(xmlfile=file(xml), callback=index_fobj)
+	SOLR.commit()
 
 if __name__ == '__main__':
 	main()
