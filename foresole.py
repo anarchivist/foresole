@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime
 
 import sunburnt
-from fiwalk import fiwalk_using_sax
+import fiwalk
 
 SOLR = sunburnt.SolrInterface("http://localhost:8983/solr", "solr/conf/schema.xml")
 
@@ -56,7 +56,7 @@ def fileobject_to_dict(fo):
 
 
 def index_fobj(fobj):
-    """Post a fileobject-dict to Solr."""
+    """Callback function to post a fileobject-dict to Solr."""
     doc = fileobject_to_dict(fobj)
     if doc is not None:
         #print doc
@@ -66,7 +66,7 @@ def index_fobj(fobj):
     
 def main():
 	xml = sys.argv[1]
-	fobjs = fiwalk_using_sax(xmlfile=file(xml), callback=index_fobj)
+	fiwalk.fiwalk_using_sax(xmlfile=file(xml), callback=index_fobj)
 	SOLR.commit()
 
 if __name__ == '__main__':
