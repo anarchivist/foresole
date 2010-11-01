@@ -8,6 +8,7 @@ foresole.py
 import sys
 import os
 import uuid
+import subprocess
 from datetime import datetime
 
 import sunburnt
@@ -24,9 +25,11 @@ def epoch_to_dt(epoch):
 def fileobject_to_dict(fo):
     """Convert a fiwalk fileobject into a dict. Ignores unallocated fileobjects."""
     if fo.allocated():
+        proc = subprocess.Popen(['./extract_strings', fo.inode()], stdout=subprocess.PIPE)
         return {
             'atime': epoch_to_dt(fo.atime()),
             'compressed': fo.compressed(),
+            'contents': proc.stdout.read(),
             'crtime': epoch_to_dt(fo.crtime()),
             'ctime': epoch_to_dt(fo.ctime()),
             'dtime': epoch_to_dt(fo.dtime()),

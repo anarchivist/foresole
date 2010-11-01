@@ -1,0 +1,2 @@
+#!/bin/bash
+icat -f ntfs ~/Desktop/lmaf/lmaf.* $1 | srch_strings

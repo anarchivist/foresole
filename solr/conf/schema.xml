@@ -462,6 +462,7 @@
    <field name="id" type="string" indexed="true" stored="true" required="true"/>
 	<field name="atime" type="tdate" indexed="true" stored="true" />
 	<field name="compressed" type="boolean" indexed="true" stored="true" />
+	<field name="contents" type="text" indexed="true" stored="true" />
 	<field name="crtime" type="tdate" indexed="true" stored="true" />
 	<field name="ctime" type="tdate" indexed="true" stored="true" />	
 	<field name="dtime" type="tdate" indexed="true" stored="true" />
