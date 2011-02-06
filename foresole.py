@@ -9,14 +9,24 @@ import sys
 import os
 import uuid
 import subprocess
+import unicodedata
+import re
 from datetime import datetime
+import hashlib
+import string
 
 import sunburnt
 import fiwalk
 
+filter = string.maketrans(
+   string.translate(string.maketrans('',''),
+   string.maketrans('',''),string.printable[:-5]),
+   '.'*len(string.translate(string.maketrans('',''),
+   string.maketrans('',''),string.printable[:-5])))
+
 SOLR = sunburnt.SolrInterface("http://localhost:8983/solr", "../gumshoe/jetty/solr/conf/schema.xml")
 IMAGE = sys.argv[1]
-
+    
 def epoch_to_dt(epoch):
     """Convert Unix epoch times into datetime.datetime objects."""
     if type(epoch) in (str, unicode):
@@ -26,11 +36,13 @@ def epoch_to_dt(epoch):
 def fileobject_to_dict(fo):
     """Convert a fiwalk fileobject into a dict. Ignores unallocated fileobjects."""
     if fo.allocated():
-        #proc = subprocess.Popen(['./extract_strings', fo.inode()], stdout=subprocess.PIPE)
+        # proc = subprocess.Popen(['./extract_strings', fo.inode()], stdout=subprocess.PIPE)
+        # contents = proc.stdout.read()
         return {
             'atime_dt': epoch_to_dt(fo.atime()),
             'compressed_b': fo.compressed(),
-            #'contents': proc.stdout.read(),
+            'contents_t': string.translate(fo.contents(), filter),
+            'contents_display': string.translate(fo.contents(), filter),
             'crtime_dt': epoch_to_dt(fo.crtime()),
             'ctime_dt': epoch_to_dt(fo.ctime()),
             'dtime_dt': epoch_to_dt(fo.dtime()),
@@ -42,7 +54,8 @@ def fileobject_to_dict(fo):
             'filesize_l': long(fo.filesize()),
             'fragments_i': int(fo.fragments()),
             'gid_i': int(fo._tags['gid']),
-            'id': uuid.uuid4(),
+            #'id': uuid.uuid4(),
+            'id':  hashlib.sha1(os.path.basename(IMAGE) + '_' + fo.inode()).hexdigest(),
             #'imagefile': fo._tags['imagefile'],
             'inode_i': int(fo.inode()),
             'libmagic_display': fo.libmagic(),
@@ -58,7 +71,7 @@ def fileobject_to_dict(fo):
             'sha1_s': fo.sha1(),
             'uid_i': int(fo._tags['uid']),
             'volume_display': IMAGE,
-            'volume_facet': IMAGE
+            'volume_facet': os.path.basename(IMAGE)
         }
     else:
         return None
